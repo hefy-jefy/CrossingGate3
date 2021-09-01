@@ -12,7 +12,9 @@
 //Made warninglights a subroutine
 //8/18/21Added a Hall sensor to reset the gate position at power-up runs in a sub-routine.
 //Warning LEDs replaced with external circuit. This avoids the problem of making the warninglights flash while
-//the stepper is running!
+//the stepper was running!
+//8/22/21 Tidied up, removed old flasher code.
+//8/28/21 Final tweaking of the closed / open values to match mechanics
 
 
 #include <AccelStepper.h>
@@ -34,36 +36,21 @@ int lightPin = A1;
 int lightVal2;
 int lightPin2 = A2;
 int ambientPin = A0;
-int gateOpen = 0; //   Rotates the stepper 90 anticlock. Could change depending on how the gates are connected to the stepper.
-int gateClose = 1024; // Rotates the stepper 90 clockwise. Could change depending on how the gates are connected to the stepper.
+int gateOpen = 0; //   Rotates the stepper to the open posn.
+int gateClose = 3400; // Rotates the stepper to the closed (down) posn.
 int gateState;
 int warningLeds = 4;
 int hallPin = 3; //Pin attached to Hall sensor, normally high.
 
-<<<<<<< Updated upstream
 void homefunction() { //Resets the gate position to the closed position.
   stepper.setMaxSpeed(1000);
   stepper.setSpeed(500);
   pinMode(hallPin, INPUT);
   while (digitalRead(hallPin) == 1) { //Low unless the gate is displaced from the open position.
-=======
-//void warninglights() {
-  //digitalWrite (led1Pin, HIGH);
-  //digitalWrite (led2Pin, LOW);
-  //delay (delayTleds);
-  //digitalWrite (led1Pin, LOW);
-  //digitalWrite (led2Pin, HIGH);
-  //delay (delayTleds);
-//}
-void homefunction() { //Resets the gates to the closed position.
-  stepper.setMaxSpeed(1000);
-  stepper.setSpeed(500);
-  pinMode(hallPin, INPUT); //Trigger on falling edge as magnet approaches the sensor
-  while (digitalRead(hallPin) == 1) { //Normally this will be low unless the gate is displaced from the open position.
->>>>>>> Stashed changes
     stepper.runSpeed();
   }
-  stepper.setCurrentPosition(0);  //Sets the motor position to 0
+  stepper.setCurrentPosition(0);  //Sets the motor position to 0 (the open position)
+
 }
 
 
@@ -89,7 +76,7 @@ void loop() {
   //Serial.println(lightVal);
   lightVal2 = analogRead(lightPin2); //         Read the #2 light detector (no train is <detect train is >detect
   //Serial.println(lightVal2);
-  if (ambient < dark) { // Check if ambient is too dark, (a higher value than the dark variable) skip to the end
+  if (ambient < dark) { //      Check if ambient is too dark, skip to the end
     if (lightVal > detect || lightVal2 > detect) { // Warning lights on if either sensor detects a train
       digitalWrite (warningLeds, HIGH);
     }
@@ -115,7 +102,7 @@ void loop() {
       stepper.moveTo(gateOpen);
       stepper.runToPosition();//   Open the gate to traffic
       gateState = 0; //                          Set gate State=0 (open)
-      //delay(1000);
+      delay(1000);
     }
   }
   stepper.disableOutputs();//Remove power from the stepper to avoid overheating
