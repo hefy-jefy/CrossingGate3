@@ -17,7 +17,8 @@
 //8/28/21 Final tweaking of the closed / open values to match mechanics
 //9/5/21 Attempting to handle short trains! TODO: figure out how to open the gates!
 //9/23/21 Added a third sensor positioned at the crossing.  Code now handles short trains and long trains, also warning light
-//behaviour is more realistic.  
+//behaviour is more realistic.
+//9/29/21 Added an adjustment to sens3 for correct operation of gate-open function.
 
 
 #include <AccelStepper.h>
@@ -53,11 +54,12 @@ int sens2New;
 int sens3 = 0;
 int sens3Old = 0;
 int sens3New = 0;
-int warningLeds = 4;
+int warningLeds = 4; //Pin attached to the warning lights flasher circuit. 
 int hallPin = 3; //Pin attached to Hall sensor, normally high.
 int dtt = 10000;  // delay to allow the train to clear the down sensor after opening the gate
+int adj3sens = -40; // Fine adjuistment to Sens3 to get correct operation of the open-gate sens 3. 
 
-void homefunction() { //Resets the gate position to the closed position.
+void homefunction() { //Resets the gate position to the open position, in case something went wrong.
   stepper.setMaxSpeed(1000);
   stepper.setSpeed(500);
   pinMode(hallPin, INPUT);
@@ -70,7 +72,7 @@ void homefunction() { //Resets the gate position to the closed position.
 void setup() {
   homefunction();
   stepper.setMaxSpeed(1000); // Set the maximum steps per second:
-  stepper.setSpeed(500);
+  stepper.setSpeed(500); 
   stepper.setAcceleration(400);  // Set the maximum acceleration in steps per second^2:
   pinMode (lightPin1, INPUT);
   pinMode (lightPin2, INPUT);
@@ -83,20 +85,20 @@ void setup() {
 void loop() {
 
   ambient = analogRead(ambientPin); //Read ambient light from ambient LDR.
-  //Serial.print(" ambient:");
-  //Serial.print(ambient);
+  Serial.print(" ambient:");
+  Serial.print(ambient);
   detect = ((ambient) + 150); //Set the detect value based on the ambient light
-  //Serial.print(" detect:");
-  //Serial.print(detect);
+  Serial.print(" detect:");
+  Serial.print(detect);
   lightVal1 = analogRead(lightPin1); //           Read the #1 LDR (no train is <detect train is >detect
-  //Serial.print(" lightVal1:");
-  //Serial.print(lightVal1);
+  Serial.print(" lightVal1:");
+  Serial.print(lightVal1);
   lightVal2 = analogRead(lightPin2); //         Read the #2 LDR (no train is <detect train is >detect
-  //Serial.print(" lightVal2:");
-  //Serial.print(lightVal2);
-  lightVal3 = analogRead(lightPin3); //        Read the #3 LDR (no train is <detect train is >detect
-  //Serial.print(" lightVal3:");
-  //Serial.println(lightVal3);
+  Serial.print(" lightVal2:");
+  Serial.print(lightVal2);
+  lightVal3 = analogRead(lightPin3)+(adj3sens); //        Read the #3 LDR (no train is <detect train is >detect.  Also apply fine adjust value.
+  Serial.print(" lightVal3:");
+  Serial.println(lightVal3);
   if (ambient < dark) { //      Check if ambient is too dark, skip to the end
 
     //**************************************************************************************
@@ -139,7 +141,7 @@ void loop() {
     }
     sens3New = sens3;
     if (sens3Old == 1 && sens3New == 0) {
-      if (gateState == 1) {                //If the gate is closed, wait until the last car has cleared the crossing
+      if (gateState == 1) {                //If the gate is closed, wait until the last car has cleared the crossing and...
         stepper.moveTo(gateOpen);
         stepper.runToPosition();           //Open the gate to road traffic.
         gateState = 0;                    //Set gate State=0 (open)
